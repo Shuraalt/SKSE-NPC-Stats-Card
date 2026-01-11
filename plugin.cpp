@@ -116,6 +116,40 @@ static bool IsModifierKeyPressed(std::int32_t modifierType) {
     return (GetAsyncKeyState(vk) & 0x8000) != 0;
 }
 
+// ---------------- MENU STATE CHECKS -------------------
+
+static bool IsMenuOpen(const char* menuName) {
+    auto ui = RE::UI::GetSingleton();
+    return ui && ui->IsMenuOpen(menuName);
+}
+
+static bool IsAnyRestrictedMenuOpen() {
+    static const std::vector<const char*> restrictedMenus = {
+        "InventoryMenu",
+        "MagicMenu",
+        "ContainerMenu",
+        "BarterMenu",
+        "GiftMenu",
+        "MapMenu",
+        "Journal Menu",
+        "Lockpicking Menu",
+        "Crafting Menu",
+        "Console",
+        "TweenMenu",
+        "Book Menu",
+        "StatsMenu",
+        "Sleep/Wait Menu",
+        "CustomMenu"
+    };
+
+    for (const auto& menu : restrictedMenus) {
+        if (IsMenuOpen(menu)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // ---------------- INPUT HANDLER -------------------
 class InputHandler : public RE::BSTEventSink<RE::InputEvent*> {
 private:
@@ -133,6 +167,14 @@ public:
         // 1) UPDATE STATS ON ANY INPUT EVENT (MOUSE, KEYBOARD, CONTROLLER)
         // ---------------------------------------------------------------
         if (isStatsVisible) {
+            // SAFETY CHECK: If a restricted menu is open, force close immediately
+            if (IsAnyRestrictedMenuOpen()) {
+                StatsCardMenu::UpdateActorStats(nullptr);
+                isStatsVisible = false;
+                lastTarget = RE::ActorHandle();
+                return RE::BSEventNotifyControl::kContinue;
+            }
+
             RE::Actor* actor = GetLockedTargetFromTrueHUD();
 
             if (!actor) {
@@ -172,6 +214,11 @@ public:
         // HOTKEY: Flip Card - Only if back card is enabled
         // -------------------------------
         if (keyCode == settings->flipHotkeyCode && settings->enableBackCard == 1) {
+            // Check if restricted menus are open
+            if (IsAnyRestrictedMenuOpen()) {
+                return RE::BSEventNotifyControl::kContinue;
+            }
+
             // Check if required modifier key is pressed
             if (!IsModifierKeyPressed(settings->modifierKey)) {
                 return RE::BSEventNotifyControl::kContinue;  // Modifier not pressed, ignore
@@ -209,6 +256,11 @@ public:
         // HOTKEY: Toggle StatsCard UI (with modifier key support)
         // -------------------------------
         if (keyCode == settings->hotkeyCode) {
+            // Check if restricted menus are open
+            if (IsAnyRestrictedMenuOpen()) {
+                return RE::BSEventNotifyControl::kContinue;
+            }
+
             // Check if required modifier key is pressed
             if (!IsModifierKeyPressed(settings->modifierKey)) {
                 return RE::BSEventNotifyControl::kContinue;  // Modifier not pressed, ignore
