@@ -27,7 +27,7 @@ static void PlayUISound(const char* editorID) {
     }
 
     RE::BSSoundHandle soundHandle;
-    audioManager->BuildSoundDataFromEditorID(soundHandle, editorID, 0x1A);
+    audioManager->GetSoundHandleByName(soundHandle, editorID, 0x1A);
 
     if (soundHandle.IsValid()) {
         soundHandle.Play();
