@@ -9,6 +9,19 @@
 #include <REL/Relocation.h>
 #include <SKSE/API.h>
 #include <SKSE/SKSE.h>
+
+// The plugin calls SHGetKnownFolderPath / GetProcAddress directly, so include the
+// Windows headers here instead of relying on CommonLibSSE to pull them in.
+#include <Windows.h>
+#include <ShlObj.h>
+#include <filesystem>
+
+// With UNICODE defined, wingdi.h renames GetObject to GetObjectW, which breaks
+// RE::*::GetObject() members. Undo the rename for the whole project.
+#ifdef GetObject
+#	undef GetObject
+#endif
+
 using namespace std::literals;
 
 // If you are not using trampoline hooks, leave this commented:

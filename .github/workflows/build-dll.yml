@@ -1,0 +1,41 @@
+name: Build DLL
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master, main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      # The runner image ships with vcpkg at this location.
+      VCPKG_ROOT: C:\vcpkg
+    steps:
+      - uses: actions/checkout@v4
+
+      # vcpkg builds nest folders very deeply, and Windows compilers fail on paths
+      # over ~250 characters. Build from a short path to stay under the limit.
+      - name: Copy to a short path
+        shell: pwsh
+        run: Copy-Item -Recurse -Force "$env:GITHUB_WORKSPACE" C:\w
+
+      # Puts cl.exe, the Windows SDK, CMake and Ninja on PATH.
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Configure
+        working-directory: C:\w
+        run: cmake --preset release
+
+      - name: Build
+        working-directory: C:\w
+        run: cmake --build build/release -- -k 0
+
+      - name: Upload DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: SKSE_SKYRIM_NPC_SHEET_V2
+          path: C:\w\build\release\SKSE_SKYRIM_NPC_SHEET_V2.dll
+          if-no-files-found: error

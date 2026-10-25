@@ -32,8 +32,26 @@ endif()
 # Otherwise, you can set OUTPUT_FOLDER to any place you'd like :)
 # set(OUTPUT_FOLDER "C:/path/to/any/folder")
 
+# CommonLibSSE-NG is fetched from source instead of using the old vcpkg port.
+# The old port cannot read the format-5 Address Library used by Skyrim 1.7.99+,
+# so plugins built against it fail with "failed to open address library file".
+include(FetchContent)
+set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(ENABLE_SKYRIM_VR OFF CACHE BOOL "" FORCE)
+set(SKSE_SUPPORT_XBYAK ON CACHE BOOL "" FORCE)
+set(SKSE_SUPPORT_PATCH_SAFETY OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(
+    CommonLibSSE
+    GIT_REPOSITORY https://github.com/alandtse/CommonLibSSE-NG.git
+    GIT_TAG v13.1.0
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(CommonLibSSE)
+# add_commonlibsse_plugin() is only exposed through find_package or prebuilt builds,
+# so include the helper explicitly when building the library from source.
+include("${commonlibsse_SOURCE_DIR}/cmake/CommonLibSSE.cmake")
+
 # Setup your SKSE plugin as an SKSE plugin!
-find_package(CommonLibSSE CONFIG REQUIRED)
 add_commonlibsse_plugin(${PROJECT_NAME} SOURCES plugin.cpp StatsCardMenu.cpp Settings.cpp LocalizationManager.cpp) # <--- specifies plugin.cpp
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23) # <--- use C++23 standard
 target_precompile_headers(${PROJECT_NAME} PRIVATE PCH.h) # <--- PCH.h is required!
